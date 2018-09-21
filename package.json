@@ -1,0 +1,32 @@
+{
+  "name": "stampchainserver",
+  "version": "1.0.0",
+  "description": "Worker time checker server",
+  "main": "dist",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cabelotaina/stampchainserver.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/cabelotaina/stampchainserver/issues"
+  },
+  "homepage": "https://github.com/cabelotaina/stampchainserver#readme",
+  "dependencies": {
+    "@types/mocha": "^5.2.5",
+    "@types/node": "^10.10.2",
+    "express": "^4.16.3"
+  },
+  "devDependencies": {
+    "eslint": "^5.6.0",
+    "eslint-config-airbnb-base": "^13.1.0",
+    "eslint-plugin-import": "^2.14.0",
+    "ts-node": "^7.0.1",
+    "typescript": "^3.0.3",
+    "typescript-eslint-parser": "^18.0.0"
+  }
+}
