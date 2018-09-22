@@ -17,9 +17,15 @@
   },
   "homepage": "https://github.com/cabelotaina/stampchainserver#readme",
   "dependencies": {
+    "@types/body-parser": "^1.17.0",
     "@types/mocha": "^5.2.5",
     "@types/node": "^10.10.2",
-    "express": "^4.16.3"
+    "async": "^2.6.1",
+    "body-parser": "^1.18.3",
+    "eth-lightwallet": "^3.0.1",
+    "express": "^4.16.3",
+    "hooked-web3-provider": "^1.0.0",
+    "web3": "^1.0.0-beta.36"
   },
   "devDependencies": {
     "eslint": "^5.6.0",
