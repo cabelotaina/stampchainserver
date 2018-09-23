@@ -25,6 +25,7 @@
     "eth-lightwallet": "^3.0.1",
     "express": "^4.16.3",
     "hooked-web3-provider": "^1.0.0",
+    "solc": "^0.4.25",
     "web3": "^1.0.0-beta.36"
   },
   "devDependencies": {
