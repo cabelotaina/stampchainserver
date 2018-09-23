@@ -6,6 +6,9 @@ import * as isNullOrUndefined from 'util'
 import * as HookedWeb3Provider from 'hooked-web3-provider'
 import * as async from 'async'
 
+import * as solc from 'solc'
+import * as fs from 'fs'
+
 
 let txutils = Lightwallet.txutils;
 let signing = Lightwallet.signing;
@@ -302,52 +305,6 @@ class App {
             }
         });
     });
-
-    router.post('/contract/create', (req, res) => {
-        if(isNullOrUndefined.isNullOrUndefined(req.body.wallet))
-        {
-            let error = { 
-                isError: true, 
-                msg: "Error read Wallet Json"
-            };
-            res.status(400).json(error);
-        }  
-        if(isNullOrUndefined.isNullOrUndefined(req.body.password))
-        {
-            let error =  {
-                isError: true,
-                msg: "Error read parameter <password>"
-            };
-            res.status(400).json(error);
-        }
-        let walletJson = req.body.wallet;
-
-        let ks = Lightwallet.keystore.deserialize(walletJson);
-        let password = req.body.password.toString();
-        ks.keyFromPassword(password, function(err, pwDerivedKey) {
-            if(!err)
-            {
-                let addresses = ks.getAddresses();
-                let web3Provider = new HookedWeb3Provider({
-                    host: 'https://rinkeby.infura.io/v3/3e9c0182d4494bef94a46c92223867f5',
-                    transaction_signer: ks
-                });
-
-                let web3 = new Web3();
-                web3.setProvider(web3Provider);
-                
-                 
-            }
-            else{  
-                let error = {
-                    isError: true,
-                    msg: err
-                };
-                res.status(400).json(error);
-            }
-        });
-    });
-
 
     this.app.use('/', router)
   }
