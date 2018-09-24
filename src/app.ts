@@ -5,9 +5,18 @@ import * as Lightwallet from 'eth-lightwallet'
 import * as isNullOrUndefined from 'util'
 import * as HookedWeb3Provider from 'hooked-web3-provider'
 import * as async from 'async'
+import * as path from 'path'
 
-import * as solc from 'solc'
 import * as fs from 'fs'
+
+
+
+const SignerProvider = require('ethjs-provider-signer');
+const sign = require('ethjs-signer').sign;
+const Eth = require('ethjs-query');
+
+
+let contract_abi = require('./contract_abi.json')
 
 
 let txutils = Lightwallet.txutils;
@@ -162,7 +171,28 @@ class App {
 
 
 
-    router.post('/contract/send', (req, res) => {
+    router.post('/contract/size', (req, res) => {
+
+
+        let contractAddr = '0x9b161aa1d1df4408a705d3cded493ac42f519a68';
+
+        let web3Provider = new HookedWeb3Provider({
+            host: this.config.hostWeb3,
+        });  
+        let web3 = new Web3();
+        web3.setProvider(web3Provider); 
+        let contract = new web3.eth.Contract(contract_abi);
+        contract.options.address = contractAddr;
+
+        contract.methods.size().call({})
+        .then(size => {
+          res.status(200).json({size: size});
+        });
+
+    });
+
+
+   router.post('/contract/create/hash', (req, res) => {
         if(isNullOrUndefined.isNullOrUndefined(req.body.wallet))
         {
             let error = {
@@ -173,28 +203,20 @@ class App {
         }  
         if(isNullOrUndefined.isNullOrUndefined(req.body.password))
         {
-            let error =  { 
+            let error =  {
                 isError: true,
                 msg: "Error read parameter <password>"
             };
             res.status(400).json(error);
-        }  
-        if(isNullOrUndefined.isNullOrUndefined(req.body.to))
-        {
-            let error =  { 
-                isError: true,
-                msg: "Error read parameter <to>"
-            };
-            res.status(400).json(error);
-        }  
+        }
         if(isNullOrUndefined.isNullOrUndefined(req.body.gasLimit))
         {
-            let error =  { 
+            let error =  {
                 isError: true,
                 msg: "Error read parameter <gasLimit>"
             };
             res.status(400).json(error);
-        }  
+        }
         if(isNullOrUndefined.isNullOrUndefined(req.body.gasPrice))
         {
             let error =  {
@@ -202,108 +224,82 @@ class App {
                 msg: "Error read parameter <gasPrice>"
             };
             res.status(400).json(error);
-        }      
-        if(isNullOrUndefined.isNullOrUndefined(req.body.value))
+        }
+        if(isNullOrUndefined.isNullOrUndefined(req.body.hash))
         {
             let error =  {
                 isError: true,
-                msg: "Error read parameter <value>"
+                msg: "Error read parameter <gasPrice>"
             };
             res.status(400).json(error);
         }
 
-        if(isNullOrUndefined.isNullOrUndefined(req.body.contractAddr))
-        {
-            let error =  {
-                isError: true,
-                msg: "Error read parameter <contractAddr>"
-            };
-            res.status(400).json(error);
-        }      
-        if(isNullOrUndefined.isNullOrUndefined(req.body.contractAbi))
-        {
-            let error =  {
-                isError: true,
-                msg: "Error read parameter <contractAbi>"
-            };
-            res.status(400).json(error);
-        }
-
-
-
-        let walletJson = JSON.stringify(req.body.wallet);
+        let walletJson = req.body.wallet;
         let ks = Lightwallet.keystore.deserialize(walletJson);
         let password = req.body.password.toString();
-        let contractAddr = req.body.contractAddress.toString();
-        let contractAbi = req.body.contractAbi.toString()
+
+        let gasPrice = req.body.gasPrice.toString();
+        let gasLimit = parseInt(req.body.gasLimit);
+
+
+        let contractAddr = '0x9b161aa1d1df4408a705d3cded493ac42f519a68';
+
 
 
         ks.keyFromPassword(password, function(err, pwDerivedKey) {
-            if(ks.isDerivedKeyCorrect(pwDerivedKey))
+            if(!err)
             {
-                if(ks.getAddresses()[0] == req.body.to)  
-                {
-                    let error = { 
-                        isError: true,
-                        msg: "Invalid Recipient"
-                    };
-                    res.status(400).json(error);
-                }  
 
+                const provider = new SignerProvider('https://rinkeby.infura.io/v3/3e9c0182d4494bef94a46c92223867f5', {
+                  signTransaction: (rawTx, cb) => cb(null, sign(rawTx, web3.utils.sha3(pwDerivedKey.toString()))),
+                  accounts: (cb) => cb(null, ks.getAddresses()),
+                });
+                const eth = new Eth(provider);
+
+
+                let addresses = ks.getAddresses();
                 let web3Provider = new HookedWeb3Provider({
-                    host: this.config.hostWeb3,
+                    host: 'https://rinkeby.infura.io/v3/3e9c0182d4494bef94a46c92223867f5',
                     transaction_signer: ks
-                });      
+                });
+
                 let web3 = new Web3();
-                web3.setProvider(web3Provider); 
+                web3.setProvider(provider);
                 
-                let nonceNumber = parseInt(web3.eth.getTransactionCount(ks.getAddresses()[0], "pending"));
-                let gasprices = parseInt(req.body.gasPrice) * 1000000000;
-                let gasLimit = parseInt(req.body.gasLimit);
-                let sendingAddr = ks.getAddresses()[0];
-                let value = parseFloat(req.body.value) * 1.0e18   //Address wallet
-                let txOptions = {
-                    nonce: web3.toHex(nonceNumber),
-                    gasLimit: web3.toHex(gasLimit),
-                    gasPrice: web3.toHex(gasprices),
-                    to: contractAddr
-                }
-                let arg = Array.prototype.slice.call([req.body.to,value]);
-                let rawTx = txutils.functionTx(contractAbi, 'transfer', arg, txOptions)
-                let signedSetValueTx = signing.signTx(ks, pwDerivedKey, rawTx, sendingAddr)
-                web3.eth.sendRawTransaction('0x' + signedSetValueTx, function(err, hash) {
-                    if(!isNullOrUndefined.isNullOrUndefined(err)){
-                        let error =  { 
-                            isError: true,
-                            msg: err
-                        };
-                        res.status(400).json(error);
-                    }   
-                    if(!isNullOrUndefined.isNullOrUndefined(hash)){
-                        let data = {
-                            isError: false,
-                            hash: hash
-                        };
-                        res.status(200).json(data);
-                    }
-                    else
-                    {
-                        let error = { 
-                            isError: true,
-                            msg: 'return hash is null'
-                        };
-                        res.status(400).json(error);
-                    }
-                }); 
+
+                let contract = new web3.eth.Contract(contract_abi, contractAddr);
+                // contract.options.address = contractAddr;
+                contract.setProvider(provider);
+
+                contract.methods.addDayOfWork(req.body.hash).estimateGas({gas: 5000000}, function(error, gasAmount){
+                  contract.methods.addDayOfWork(req.body.hash)
+                  .send({ 
+                    from: ks.getAddresses()[0],
+                    gasPrice:  0x2dc6c0,
+                    gas: 0x5208,
+                    value: 0x0000
+                  })
+                  .on('receipt', function(receipt){
+                    res.status(200).json({message: 'Hash added.'});
+                  })
+                  .on('error', error => {
+                    console.error(error)
+                    res.status(200).json({message: error})
+                  });
+                })
+
+
             }
-            else{
+            else{  
                 let error = {
                     isError: true,
-                    msg: 'Password incorrect'
+                    msg: err
                 };
                 res.status(400).json(error);
             }
         });
+
+
     });
 
     this.app.use('/', router)
