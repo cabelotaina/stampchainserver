@@ -15,11 +15,11 @@ contract TimeCheck{
 	
 	mapping (address => AccountInfo) private workers;
 
-	function size() public returns (uint256) {
+	function size() public view returns (uint256) {
 	    return workers[msg.sender].counter;
 	}
 
-	function getDayOfWork(uint index) public returns (uint256, string) {
+	function getDayOfWork(uint256 index) public view returns (uint256, string) {
 		return (workers[msg.sender].dayWorkHistory[index].timestamp, workers[msg.sender].dayWorkHistory[index].hash);
 	}
 
@@ -29,7 +29,7 @@ contract TimeCheck{
 	  workers[msg.sender].dayWorkHistory[workers[msg.sender].counter].hash = hash;
 	}
 
-    function timeCall() private returns (uint256){
+    function timeCall() private view returns (uint256){
       return now;
     }
 
