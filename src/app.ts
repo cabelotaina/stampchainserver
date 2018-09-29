@@ -1,16 +1,12 @@
 import * as express from 'express'
-import * as bodyParser from "body-parser";
+import * as bodyParser from 'body-parser';
 import * as Web3 from 'web3'
 import * as Lightwallet from 'eth-lightwallet'
 import * as isNullOrUndefined from 'util'
 import * as HookedWeb3Provider from 'hooked-web3-provider'
 import * as async from 'async'
-import * as path from 'path'
-
-import * as fs from 'fs'
-
-
 import * as tx from 'ethereumjs-tx'
+import * as cors from 'cors'
 
 
 
@@ -21,6 +17,14 @@ const Eth = require('ethjs-query');
 
 let contractAbi = require('./contract_abi.json')
 
+
+const options:cors.CorsOptions = {
+  allowedHeaders: ["Origin", "X-Requested-With", "Content-Type", "Accept", "X-Access-Token"],
+  credentials: true,
+  methods: "GET,HEAD,OPTIONS,PUT,PATCH,POST,DELETE",
+  origin: 'http://localhost:8100',
+  preflightContinue: true
+};
 
 
 let txutils = Lightwallet.txutils;
@@ -49,6 +53,8 @@ class App {
   private mountRoutes (): void {
 
     const router = express.Router()
+    router.use(cors(options))
+    router.options("*", cors(options))
     router.get('/seed/:point', (req, res) => {
       if(isNullOrUndefined.isNullOrUndefined(req.params.point))
       {
@@ -175,22 +181,52 @@ class App {
 
 
 
+    // create new contract size get endpoint
+
     router.post('/contract/size', (req, res) => {
 
+      let ks = Lightwallet.keystore.deserialize(req.body.wallet);
+      let contractAddr = '0xCB42357f9E1C41db449a7D2b557635175eC9899A';
 
-        let contractAddr = '0xCB42357f9E1C41db449a7D2b557635175eC9899A';
+      let web3Provider = new HookedWeb3Provider({
+          host: this.config.hostWeb3,
+      });  
+      let web3 = new Web3();
+      web3.setProvider(web3Provider); 
+      let contract = new web3.eth.Contract(contractAbi, contractAddr);
 
-        let web3Provider = new HookedWeb3Provider({
-            host: this.config.hostWeb3,
-        });  
-        let web3 = new Web3();
-        web3.setProvider(web3Provider); 
-        let contract = new web3.eth.Contract(contractAbi, contractAddr);
-
-        contract.methods.size().call({})
-        .then(size => {
+      contract.methods.size().call({from: ks.getAddresses()[0]}, (error, size) => {
+        if (!error) {
           res.status(200).json({size: size});
-        });
+        } else {
+          res.status(400).json({error: error});
+        }
+      });
+
+    });
+
+
+    // create new get day of work endpoint
+
+    router.post('/contract/day', (req, res) => {
+
+      let ks = Lightwallet.keystore.deserialize(req.body.wallet);
+      let contractAddr = '0xCB42357f9E1C41db449a7D2b557635175eC9899A';
+
+      let web3Provider = new HookedWeb3Provider({
+          host: this.config.hostWeb3,
+      });  
+      let web3 = new Web3();
+      web3.setProvider(web3Provider); 
+      let contract = new web3.eth.Contract(contractAbi, contractAddr);
+
+      contract.methods.getDayOfWork(req.body.index.toString()).call({from: ks.getAddresses()[0]}, (error, result) => {
+        if (!error) {
+          res.status(200).json({size: result});
+        } else {
+          res.status(400).json({error: error});
+        }
+      });
 
     });
 
