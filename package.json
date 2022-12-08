@@ -28,7 +28,7 @@
     "ethjs-provider-signer": "^0.1.4",
     "ethjs-query": "^0.3.8",
     "ethjs-signer": "^0.1.1",
-    "express": "^4.16.3",
+    "express": "^4.17.3",
     "hooked-web3-provider": "^1.0.0",
     "prompt": "^1.0.0",
     "solc": "^0.4.25",
